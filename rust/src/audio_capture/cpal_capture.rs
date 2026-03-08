@@ -16,20 +16,20 @@ pub struct CpalAudioCapture {
 impl AudioCapture for CpalAudioCapture {
     fn new(config: AudioCaptureConfig) -> Result<Self> {
         let host = cpal::default_host();
-        
+
         let device = if config.is_input {
             match &config.device {
                 None => host.default_input_device(),
                 Some(device_name) => host
                     .input_devices()?
-                    .find(|x| x.name().map_or(false, |y| y == *device_name)),
+                    .find(|x| x.description().map_or(false, |y| y.name() == *device_name)),
             }
         } else {
             match &config.device {
                 None => host.default_output_device(),
                 Some(device_name) => host
                     .output_devices()?
-                    .find(|x| x.name().map_or(false, |y| y == *device_name)),
+                    .find(|x| x.description().map_or(false, |y| y.name() == *device_name)),
             }
         }
         .ok_or_else(|| anyhow::anyhow!("Failed to find audio device"))?;
@@ -40,8 +40,8 @@ impl AudioCapture for CpalAudioCapture {
             device.default_output_config()?
         };
 
-        let device_name = device.name()?;
-        let sample_rate = device_config.sample_rate().0;
+        let device_name = device.description()?.name().to_string();
+        let sample_rate = device_config.sample_rate();
         let channels = device_config.channels() as u32;
 
         println!("CPAL audio device -> {device_name:?} config -> {device_config:?}");
@@ -64,13 +64,13 @@ impl AudioCapture for CpalAudioCapture {
 
     fn start_capture(&self, cancel_token: CancellationToken) -> Result<mpsc::Receiver<Vec<f32>>> {
         let (tx, rx) = mpsc::channel::<Vec<f32>>();
-        
+
         let config = self.config.clone();
         let channels = self.channels as usize;
         let sample_rate = self.sample_rate as usize;
         let target_sample_rate = self.config.target_sample_rate as f64;
         let resample_ratio = target_sample_rate / sample_rate as f64;
-        
+
         thread::spawn(move || {
             let host = cpal::default_host();
             let device = if config.is_input {
@@ -79,7 +79,7 @@ impl AudioCapture for CpalAudioCapture {
                     Some(device_name) => host
                         .input_devices()
                         .unwrap()
-                        .find(|x| x.name().map_or(false, |y| y == *device_name)),
+                        .find(|x| x.description().map_or(false, |y| y.name() == *device_name)),
                 }
             } else {
                 match &config.device {
@@ -87,7 +87,7 @@ impl AudioCapture for CpalAudioCapture {
                     Some(device_name) => host
                         .output_devices()
                         .unwrap()
-                        .find(|x| x.name().map_or(false, |y| y == *device_name)),
+                        .find(|x| x.description().map_or(false, |y| y.name() == *device_name)),
                 }
             }
             .expect("Failed to find audio device");
