@@ -20,15 +20,15 @@ pub struct SenseVoiceModel {
 
 impl SenseVoiceModel {
     pub fn from_session(session: Session) -> anyhow::Result<Self> {
-        // 尝试获取自定义元数据，如果失败则使用默认值
+        // Try to get custom metadata, use defaults if that fails
 
-        // 从模型元数据中获取参数
-        let mut window_size = 7; // 默认值
-        let mut window_shift = 6; // 默认值
-        let mut with_itn = 1; // 默认值
+        // Get parameters from model metadata
+        let mut window_size = 7; // Default value
+        let mut window_shift = 6; // Default value
+        let mut with_itn = 1; // Default value
         let without_itn = 0;
 
-        // 尝试从metadata获取实际参数
+        // Try to get actual parameters from metadata
         if let Ok(metadata) = session.metadata() {
             if let Ok(Some(lfr_window_size)) = metadata.custom("lfr_window_size") {
                 if let Ok(size) = lfr_window_size.parse::<i32>() {
@@ -47,7 +47,7 @@ impl SenseVoiceModel {
             }
         }
 
-        // 语言ID映射
+        // Language ID mapping
         let mut lang_id = HashMap::new();
         lang_id.insert("zh".to_string(), 0);
         lang_id.insert("en".to_string(), 1);
@@ -55,12 +55,12 @@ impl SenseVoiceModel {
         lang_id.insert("ko".to_string(), 3);
         lang_id.insert("auto".to_string(), 4);
 
-        // 归一化参数 - 根据window_size动态计算维度
+        // Normalization parameters - dynamically computed based on window_size
         let feature_dim = 80 * window_size as usize;
         let mut neg_mean = vec![0.0; feature_dim];
         let mut inv_stddev = vec![1.0; feature_dim];
 
-        // 从metadata获取归一化参数
+        // Get normalization parameters from metadata
         if let Ok(metadata) = session.metadata() {
             if let Ok(Some(inv_stddev_str)) = metadata.custom("inv_stddev") {
                 let values: Vec<f32> = inv_stddev_str
@@ -93,7 +93,7 @@ impl SenseVoiceModel {
         );
         println!("  - language mappings: {:?}", lang_id);
 
-        // 尝试打印可用的元数据信息用于调试
+        // Try to print available metadata info for debugging
         if let Ok(metadata) = session.metadata() {
             println!("Available metadata:");
             println!("  - version: {:?}", metadata.version());
@@ -108,13 +108,13 @@ impl SenseVoiceModel {
             );
         }
 
-        // 打印模型的输入信息用于调试
+        // Print model input info for debugging
         println!("Model inputs:");
         for input in session.inputs.iter() {
             println!("  - name: {}, type: {:?}", input.name, input.input_type);
         }
 
-        // 打印模型的输出信息用于调试
+        // Print model output info for debugging
         println!("Model outputs:");
         for output in session.outputs.iter() {
             println!("  - name: {}, type: {:?}", output.name, output.output_type);
@@ -143,10 +143,10 @@ impl SenseVoiceModel {
 
         let seq_len = features.shape()[0];
 
-        // 准备输入张量
-        let x = features.insert_axis(Axis(0)); // [1, T, D] - 添加batch维度
+        // Prepare input tensor
+        let x = features.insert_axis(Axis(0)); // [1, T, D] - Add batch dimension
 
-        // 根据模型输入要求，x_length, language, text_norm 需要是 i32 类型
+        // Model inputs require x_length, language, text_norm as i32 type
         let x_length = Array1::from_vec(vec![seq_len as i32]);
 
         let language_id = self
@@ -176,7 +176,7 @@ impl SenseVoiceModel {
             "text_norm" => text_norm_value,
         ])?;
 
-        // 获取输出
+        // Get outputs
         let output_keys: Vec<_> = outputs.keys().collect();
         if output_keys.is_empty() {
             return Err(anyhow::anyhow!("No outputs from model"));
@@ -184,7 +184,7 @@ impl SenseVoiceModel {
 
         println!("Available output keys: {:?}", output_keys);
 
-        // 尝试获取输出 - 常见的输出名称
+        // Try to get output - common output names
         let logits_value = outputs
             .get("logits")
             .or_else(|| outputs.get("output"))
@@ -192,12 +192,12 @@ impl SenseVoiceModel {
             .or_else(|| outputs.get(output_keys[0]))
             .ok_or_else(|| anyhow::anyhow!("Cannot find model output"))?;
 
-        // 将ONNX Value转换为ndarray
+        // Convert ONNX Value to ndarray
         match logits_value.try_extract_tensor::<f32>() {
             Ok(tensor_data) => {
                 let (shape, data) = tensor_data;
 
-                // 假设输出形状为 [batch, seq_len, vocab_size] 或 [seq_len, vocab_size]
+                // Assume output shape is [batch, seq_len, vocab_size] or [seq_len, vocab_size]
                 if shape.len() < 2 {
                     return Err(anyhow::anyhow!(
                         "Expected at least 2D output tensor, got {}D",
@@ -205,23 +205,23 @@ impl SenseVoiceModel {
                     ));
                 }
 
-                // 处理不同的输出形状，转换为usize
+                // Handle different output shapes, convert to usize
                 let (seq_len_out, vocab_size) = if shape.len() == 3 {
-                    // 形状为 [batch, seq_len, vocab_size]
+                    // Shape is [batch, seq_len, vocab_size]
                     let batch_size = shape[0] as usize;
                     if batch_size != 1 {
                         return Err(anyhow::anyhow!("Expected batch size 1, got {}", batch_size));
                     }
                     (shape[1] as usize, shape[2] as usize)
                 } else {
-                    // 形状为 [seq_len, vocab_size]
+                    // Shape is [seq_len, vocab_size]
                     (shape[0] as usize, shape[1] as usize)
                 };
 
-                // 创建2D数组 [seq_len, vocab_size]
+                // Create 2D array [seq_len, vocab_size]
                 let mut logits = Array2::zeros((seq_len_out, vocab_size));
 
-                // 计算数据偏移量
+                // Calculate data offset
                 let data_offset = if shape.len() == 3 { 0 } else { 0 };
 
                 for i in 0..seq_len_out {
@@ -248,12 +248,12 @@ fn compute_features(
     window_size: i32,
     window_shift: i32,
 ) -> anyhow::Result<Array2<f32>> {
-    // 配置fbank参数
+    // Configure fbank parameters
     let mut fbank_opts = FbankOptions::default();
     fbank_opts.frame_opts.dither = 0.0;
     fbank_opts.frame_opts.snip_edges = false;
     fbank_opts.frame_opts.samp_freq = sample_rate;
-    // 设置hamming窗口
+    // Set hamming window
     fbank_opts.frame_opts.window_type = std::ffi::CStr::from_bytes_with_nul(b"hamming\0")
         .unwrap()
         .as_ptr(); // "hamming";
@@ -261,7 +261,7 @@ fn compute_features(
 
     let mut online_fbank = OnlineFbank::new(fbank_opts);
 
-    // 将样本缩放到16位整数范围然后转换为f32
+    // Scale samples to 16-bit integer range then convert to f32
     let scaled_samples: Vec<f32> = samples.iter().map(|&x| x * 32768.0).collect();
     online_fbank.accept_waveform(sample_rate, &scaled_samples);
     online_fbank.input_finished();
@@ -271,7 +271,7 @@ fn compute_features(
         return Err(anyhow::anyhow!("No frames ready"));
     }
 
-    // 提取所有帧的特征
+    // Extract all frame features
     let mut features = Vec::with_capacity(num_frames as usize);
     for i in 0..num_frames {
         if let Some(frame) = online_fbank.get_frame(i) {
@@ -292,10 +292,10 @@ fn compute_features(
         }
     }
 
-    // 应用LFR (Low Frame Rate) 处理
+    // Apply LFR (Low Frame Rate) processing
     let lfr_features = apply_lfr(&feature_matrix, window_size, window_shift)?;
 
-    // 应用归一化
+    // Apply normalization
     let normalized_features = apply_normalization(&lfr_features, neg_mean, inv_stddev)?;
 
     Ok(normalized_features)
@@ -354,7 +354,7 @@ fn parse_sensevoice_output(
     logits: &Array2<f32>,
     tokens: &HashMap<usize, String>,
 ) -> def::SenseVoiceOutput {
-    // 获取最大概率的token索引
+    // Get index of max probability token
     let indices: Vec<usize> = logits
         .rows()
         .into_iter()
@@ -367,7 +367,7 @@ fn parse_sensevoice_output(
         })
         .collect();
 
-    // 去除连续重复的token
+    // Remove consecutive duplicate tokens
     let mut unique_indices = Vec::new();
     let mut prev_idx = None;
     for idx in indices {
@@ -377,21 +377,21 @@ fn parse_sensevoice_output(
         }
     }
 
-    // 去除blank token (通常是0)
+    // Remove blank token (usually 0)
     let blank_id = 0;
     unique_indices.retain(|&idx| idx != blank_id);
 
-    // 转换为token字符串
+    // Convert to token strings
     let token_strings: Vec<String> = unique_indices
         .iter()
         .filter_map(|&idx| tokens.get(&idx))
         .map(|token| token.to_string())
         .collect();
 
-    // 将所有token连接成一个字符串进行初步处理
+    // Join all tokens into a single string for initial processing
     let full_text = token_strings.join("");
 
-    // 解析特殊标记
+    // Parse special tokens
     let mut language = None;
     let mut emotion = None;
     let mut event = None;
@@ -399,15 +399,15 @@ fn parse_sensevoice_output(
     let mut text_parts = Vec::new();
     let mut emoji_parts = Vec::new();
 
-    // 处理特殊的组合标记
-    let processed_text = full_text.replace("<|nospeech|><|Event_UNK|>", "❓"); // 特殊组合标记
+    // Handle special combined tokens
+    let processed_text = full_text.replace("<|nospeech|><|Event_UNK|>", "❓"); // Special combined token
 
-    // 使用正则表达式或简单的字符串匹配来提取特殊标记和普通文本
+    // Use regex or simple string matching to extract special tokens and plain text
     let mut remaining_text = processed_text.as_str();
 
-    // 按顺序处理各种标记
+    // Process various tokens in order
     while let Some(start) = remaining_text.find("<|") {
-        // 添加标记前的文本
+        // Add text before the token
         if start > 0 {
             let before_text = &remaining_text[..start];
             if !before_text.trim().is_empty() {
@@ -415,12 +415,12 @@ fn parse_sensevoice_output(
             }
         }
 
-        // 查找标记结束
+        // Find token end
         if let Some(end) = remaining_text[start..].find("|>") {
             let tag_end = start + end + 2;
             let tag = &remaining_text[start..tag_end];
 
-            // 解析标记
+            // Parse token
             if let Some(lang) = def::SenseVoiceLanguage::from_token(tag) {
                 language = Some(lang.clone());
                 let emoji = lang.to_emoji();
@@ -442,22 +442,22 @@ fn parse_sensevoice_output(
             } else if let Some(norm) = def::SenseVoiceTextNorm::from_token(tag) {
                 text_norm = Some(norm);
             }
-            // 其他未识别的标记被忽略
+            // Other unrecognized tokens are ignored
 
             remaining_text = &remaining_text[tag_end..];
         } else {
-            // 如果没有找到结束标记，将剩余部分作为文本
+            // If no end token found, treat remainder as text
             text_parts.push(remaining_text.to_string());
             break;
         }
     }
 
-    // 添加剩余的文本
+    // Add remaining text
     if !remaining_text.is_empty() && !remaining_text.trim().is_empty() {
         text_parts.push(remaining_text.to_string());
     }
 
-    // 合并文本并清理
+    // Merge text and clean up
     let text = text_parts.join("").replace("▁", " ").trim().to_string();
 
     let emoji = emoji_parts.join("");
@@ -473,7 +473,7 @@ fn parse_sensevoice_output(
 }
 
 
-// SenseVoice推理辅助函数
+// SenseVoice inference helper function
 pub fn run_sensevoice_inference(
     model: &mut SenseVoiceModel,
     pcm: &[f32],
@@ -481,7 +481,7 @@ pub fn run_sensevoice_inference(
     tokens: &HashMap<usize, String>,
     #[allow(unused_variables)] timeout: Option<Duration>,
 ) -> anyhow::Result<Vec<Segment>> {
-    // 计算特征
+    // Compute features
     let features = compute_features(
         pcm,
         16000.0,
@@ -491,14 +491,14 @@ pub fn run_sensevoice_inference(
         model.window_shift,
     )?;
 
-    // 运行推理
-    let use_itn = false; // 可以根据需要配置
+    // Run inference
+    let use_itn = false; // Can be configured as needed
     let logits = model.inference(features, language, use_itn)?;
 
-    // 解析SenseVoice输出
+    // Parse SenseVoice output
     let parsed_output = parse_sensevoice_output(&logits, tokens);
 
-    // 打印调试信息
+    // Print debug info
     println!("SenseVoice parsed output:");
     println!("  Language: {:?}", parsed_output.language);
     println!("  Emotion: {:?}", parsed_output.emotion);
@@ -507,14 +507,14 @@ pub fn run_sensevoice_inference(
     println!("  Emoji: {}", parsed_output.emoji);
     println!("  Clean text: {}", parsed_output.text);
 
-    // 创建segment，只返回纯文本
+    // Create segment, return only plain text
     let duration = pcm.len() as f64 / 16000.0;
     let segment = Segment {
         start: 0.0,
         duration,
         dr: DecodingResult {
-            tokens: vec![],           // SenseVoice暂不返回token序列
-            text: parsed_output.text, // 只返回纯文本，不包含特殊标记
+            tokens: vec![],           // SenseVoice currently does not return token sequence
+            text: parsed_output.text, // Return only plain text, without special tokens
             avg_logprob: 0.0,
             no_speech_prob: 0.0,
             temperature: 0.0,

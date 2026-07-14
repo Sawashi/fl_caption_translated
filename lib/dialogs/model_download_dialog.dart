@@ -56,13 +56,13 @@ class _ModelDownloadDialogState extends ConsumerState<ModelDownloadDialog> {
             final totalSeconds = (elapsedSeconds / progressPercent).round();
             final remainingSeconds = totalSeconds - elapsedSeconds;
 
-            // 计算下载速度
+            // Calculate download speed
             final progressDiff = downloadState.currentProgress - lastProgress;
-            final bytesPerSecond = progressDiff / 1; // 1秒内下载的字节数
+            final bytesPerSecond = progressDiff / 1; // Bytes downloaded in 1 second
 
             setState(() {
               _estimatedTimeLeft = Duration(seconds: remainingSeconds > 0 ? remainingSeconds : 0);
-              _downloadSpeed = bytesPerSecond / 1024; // 转换为 KB/s
+              _downloadSpeed = bytesPerSecond / 1024; // Convert to KB/s
               lastProgress = downloadState.currentProgress;
             });
           }
@@ -79,11 +79,11 @@ class _ModelDownloadDialogState extends ConsumerState<ModelDownloadDialog> {
 
   String _formatDuration(Duration duration) {
     if (duration.inSeconds < 60) {
-      return "${duration.inSeconds}秒";
+      return "${duration.inSeconds}s";
     } else if (duration.inMinutes < 60) {
-      return "${duration.inMinutes}分 ${duration.inSeconds % 60}秒";
+      return "${duration.inMinutes}m ${duration.inSeconds % 60}s";
     } else {
-      return "${duration.inHours}时 ${duration.inMinutes % 60}分";
+      return "${duration.inHours}h ${duration.inMinutes % 60}m";
     }
   }
 
@@ -103,14 +103,14 @@ class _ModelDownloadDialogState extends ConsumerState<ModelDownloadDialog> {
 
     return ContentDialog(
       title: Text(
-        '(${downloadState.currentDownloadFileIndex + 1}/$filesCount) 正在下载 ${widget.model.name}',
+        '(${downloadState.currentDownloadFileIndex + 1}/$filesCount) Downloading ${widget.model.name}',
         style: FluentTheme.of(context).typography.subtitle,
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('模型大小: ${widget.model.size}'),
+          Text('Model Size: ${widget.model.size}'),
           const SizedBox(height: 20),
 
           if (downloadState.currentTotal == 0)
@@ -144,13 +144,13 @@ class _ModelDownloadDialogState extends ConsumerState<ModelDownloadDialog> {
               downloadState.currentProgress >= downloadState.currentTotal)
             const SizedBox.shrink()
           else
-            Text('预计剩余时间: ${_formatDuration(_estimatedTimeLeft)}'),
+            Text('Estimated time remaining: ${_formatDuration(_estimatedTimeLeft)}'),
 
           const SizedBox(height: 20),
           if (downloadState.errorText != null)
-            Text('错误: ${downloadState.errorText}', style: TextStyle(color: Colors.red))
+            Text('Error: ${downloadState.errorText}', style: TextStyle(color: Colors.red))
           else
-            const Text('请勿关闭此窗口，直到下载完成。', style: TextStyle(fontStyle: FontStyle.italic)),
+            const Text('Please do not close this window until the download is complete.', style: TextStyle(fontStyle: FontStyle.italic)),
         ],
       ),
       actions: [
@@ -159,7 +159,7 @@ class _ModelDownloadDialogState extends ConsumerState<ModelDownloadDialog> {
             Navigator.of(context).pop();
             ref.read(modelDownloadStateProvider(widget.model.name, widget.savePath).notifier).cancelDownload();
           },
-          child: const Text('取消'),
+          child: const Text('Cancel'),
         ),
       ],
     );

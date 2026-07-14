@@ -6,6 +6,6 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
-/// 计算字符串中重复字符的数量
+/// Count the number of duplicate characters in a string
 Future<BigInt> countDuplicateCharacters({required String input}) =>
     RustLib.instance.api.crateApiTextUtilCountDuplicateCharacters(input: input);

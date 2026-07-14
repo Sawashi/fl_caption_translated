@@ -13,7 +13,7 @@ class SettingsCaptionsPage extends HookConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("字幕设置", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const Text("Caption Settings", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -21,13 +21,13 @@ class SettingsCaptionsPage extends HookConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  InfoLabel(label: "音频语言:"),
+                  InfoLabel(label: "Audio Language:"),
                   ComboBox<String?>(
-                    placeholder: const Text('自动检测'),
+                    placeholder: const Text('Auto Detect'),
                     isExpanded: true,
                     value: appSettingsData.value?.audioLanguage,
                     items: [
-                      const ComboBoxItem<String?>(value: null, child: Text('自动检测')),
+                      const ComboBoxItem<String?>(value: null, child: Text('Auto Detect')),
                       ...whisperLanguages.entries.map(
                         (e) => ComboBoxItem<String?>(
                           value: e.key,
@@ -47,13 +47,13 @@ class SettingsCaptionsPage extends HookConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  InfoLabel(label: "字幕语言:"),
+                  InfoLabel(label: "Caption Language:"),
                   ComboBox<String?>(
-                    placeholder: const Text('无字幕'),
+                    placeholder: const Text('No Caption'),
                     isExpanded: true,
                     value: appSettingsData.value?.captionLanguage,
                     items: [
-                      const ComboBoxItem<String?>(value: null, child: Text('无字幕')),
+                      const ComboBoxItem<String?>(value: null, child: Text('No Caption')),
                       ...captionLanguages.entries.map(
                         (e) => ComboBoxItem<String?>(
                           value: e.key,

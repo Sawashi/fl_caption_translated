@@ -6,10 +6,10 @@ import 'package:flutter/services.dart' show MethodCall;
 class MultiWindowWindowUtil {
   static int mainWindowId = 0;
 
-  // 记录当前是否是主窗口
+  // Tracks whether this is the main window
   static bool isMainWindow = false;
 
-  // 子窗口统一调用
+  // Unified handler for sub-window method calls
   static Future windowMethodHandler(MethodCall call, int fromWindowId) async {
     switch (call.method) {
       case "main_window_id_broadcast":

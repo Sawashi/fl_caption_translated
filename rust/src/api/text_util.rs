@@ -1,10 +1,10 @@
 use rayon::prelude::*;
 use std::collections::HashMap;
 
-/// 计算字符串中重复字符的数量
+/// Count the number of duplicate characters in a string
 pub async fn count_duplicate_characters(input: String) -> usize {
     let char_counts = input
-        .par_chars() // 使用 rayon 并行迭代字符
+        .par_chars() // Iterate characters in parallel using rayon
         .fold(HashMap::new, |mut acc, c| {
             *acc.entry(c).or_insert(0) += 1;
             acc

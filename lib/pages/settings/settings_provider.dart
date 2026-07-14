@@ -58,7 +58,7 @@ class AppSettings extends _$AppSettings {
     final bool withVAD = box.get("with_vad", defaultValue: true);
     final double vadThreshold = box.get("vad_threshold", defaultValue: 0.1);
 
-    // 推理设置项
+    // Inference settings
     final int whisperMaxAudioDuration = box.get("whisper_max_audio_duration", defaultValue: 12);
     final int inferenceInterval = box.get("inference_interval_ms", defaultValue: 2000);
     final int whisperDefaultMaxDecodeTokens = box.get("whisper_default_max_decode_tokens", defaultValue: 256);

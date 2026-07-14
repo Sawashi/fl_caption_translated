@@ -28,7 +28,7 @@ class SettingsWhisperPage extends HookConsumerWidget {
           onChanged: (value) {
             appSettingsData.value = appSettingsData.value?.copyWith(tryWithCuda: value);
           },
-          content: Text(Platform.isMacOS ? "启用 Metal 加速 （需要 Apple Silicon 处理器）" : "启用 GPU 加速"),
+          content: Text(Platform.isMacOS ? "Enable Metal Acceleration (requires Apple Silicon)" : "Enable GPU Acceleration"),
         ),
         const SizedBox(height: 16),
         _buildModelFolderSection(modelDirController),
@@ -40,13 +40,13 @@ class SettingsWhisperPage extends HookConsumerWidget {
           onChanged: (value) {
             appSettingsData.value = appSettingsData.value?.copyWith(withVAD: value);
           },
-          content: const Text("使用 VAD 模型 (减少非文字音频产生的幻觉，增加些许推理时间)"),
+          content: const Text("Use VAD Model (reduces hallucinations from non-speech audio, adds a small amount of inference time)"),
         ),
         const SizedBox(height: 16),
         if (appSettingsData.value?.withVAD ?? true) ...[
           Row(
             children: [
-              Text("VAD 过滤阈值:"),
+              Text("VAD Threshold:"),
               const SizedBox(width: 8),
               // slider 0 ~ 1  step 0.1
               SizedBox(
@@ -67,7 +67,7 @@ class SettingsWhisperPage extends HookConsumerWidget {
           ),
           SizedBox(height: 6),
           Text(
-            "VAD 模型会对音频进行打分，低于此值的音频将被过滤，范围 0.0 ~ 1.0，默认值 0.1",
+            "VAD model scores the audio; audio below this threshold will be filtered. Range: 0.0 ~ 1.0, Default: 0.1",
             style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: .6)),
           ),
         ],
@@ -79,10 +79,10 @@ class SettingsWhisperPage extends HookConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InfoLabel(label: "模型文件夹路径："),
+        InfoLabel(label: "Model Folder Path:"),
         Row(
           children: [
-            Expanded(child: TextBox(controller: modelDirController, placeholder: "请选择模型文件夹路径")),
+            Expanded(child: TextBox(controller: modelDirController, placeholder: "Select model folder path")),
             const SizedBox(width: 8),
             IconButton(
               icon: const Icon(FluentIcons.folder_search),
@@ -91,7 +91,7 @@ class SettingsWhisperPage extends HookConsumerWidget {
                 // final path = await FilePicker.platform.getDirectoryPath(
                 //   lockParentWindow: true,
                 //   initialDirectory: modelDirController.text.trim(),
-                //   dialogTitle: "请选择文件夹路径",
+                //   dialogTitle: "Select folder path",
                 // );
                 // if (path != null) {
                 //   modelDirController.text = path;
@@ -112,12 +112,12 @@ class SettingsWhisperPage extends HookConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InfoLabel(label: "语音识别模型："),
+        InfoLabel(label: "Speech Recognition Model:"),
         Row(
           children: [
             Expanded(
               child: ComboBox<String>(
-                placeholder: const Text('选择模型'),
+                placeholder: const Text('Select Model'),
                 isExpanded: true,
                 value: appSettingsData.value?.whisperModel,
                 items:
@@ -162,7 +162,7 @@ class SettingsWhisperPage extends HookConsumerWidget {
           onPressed: () async {
             final modelName = appSettingsData.value!.whisperModel;
             final modelData = whisperModels[modelName];
-            final ok = await showConfirmDialogs(context, "确认开始下载模型 $modelName？", Text("这将占用大约 ${modelData?.size} 空间"));
+            final ok = await showConfirmDialogs(context, "Confirm download model $modelName?", Text("This will take approximately ${modelData?.size} of space"));
             var savePath = modelDirController.text.trim();
             if (ok) {
               if (!context.mounted) return;
@@ -174,7 +174,7 @@ class SettingsWhisperPage extends HookConsumerWidget {
               );
               if (downloadOK != true) {
                 if (!context.mounted) return;
-                showToast(context, "下载失败：${modelState.errorText}");
+                showToast(context, "Download failed: ${modelState.errorText}");
               }
             }
           },

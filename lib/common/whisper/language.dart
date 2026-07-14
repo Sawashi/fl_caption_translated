@@ -20,7 +20,7 @@ class WhisperLanguage {
   });
 }
 
-/// 语言映射表，包含 Whisper 支持的所有语言
+  /// Language mapping table containing all languages supported by Whisper
 /// Language mapping containing all languages supported by Whisper
 
 const Map<String, WhisperLanguage> whisperLanguages = {

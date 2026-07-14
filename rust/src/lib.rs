@@ -24,7 +24,7 @@ fn _try_get_cuda() -> candle_core::Device {
     // get a cuda device
     let result = panic::catch_unwind(|| candle_core::Device::cuda_if_available(0).unwrap());
     result.unwrap_or_else(|panic_err| {
-        // 尝试从 panic 值中提取有用信息
+        // Try to extract useful info from the panic value
         let panic_info = if let Some(s) = panic_err.downcast_ref::<String>() {
             s.clone()
         } else if let Some(s) = panic_err.downcast_ref::<&str>() {
@@ -41,7 +41,7 @@ fn _try_get_cuda() -> candle_core::Device {
             .show()
             .unwrap();
         eprintln!("CUDA device initialization error {}", panic_info);
-        // 返回 CPU 设备
+        // Fall back to CPU device
         candle_core::Device::Cpu
     })
 }

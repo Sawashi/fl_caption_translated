@@ -1,12 +1,12 @@
 param(
-    [string]$EnableNvidia = $null  # 控制是否启用 NVIDIA 功能
+    [string]$EnableNvidia = $null  # Controls whether NVIDIA features are enabled
 )
 
-# 如果没有通过参数传递，则尝试从环境变量读取
+# If not passed as parameter, try to read from environment variable
 if ([string]::IsNullOrEmpty($EnableNvidia)) {
     $EnableNvidia = $env:ENABLE_NVIDIA
     if ([string]::IsNullOrEmpty($EnableNvidia)) {
-        $EnableNvidia = "true"  # 默认启用
+        $EnableNvidia = "true"  # Enabled by default
         Write-Host "No NVIDIA setting provided, defaulting to enabled" -ForegroundColor Yellow
     } else {
         Write-Host "Using NVIDIA setting from environment variable: $EnableNvidia" -ForegroundColor Cyan
@@ -18,10 +18,10 @@ if ([string]::IsNullOrEmpty($EnableNvidia)) {
 Write-Host "Starting Windows build process..." -ForegroundColor Green
 Write-Host "NVIDIA Support: $EnableNvidia" -ForegroundColor Cyan
 
-# 获取项目根目录
+# Get project root directory
 $projectRoot = Split-Path -Parent $PSScriptRoot
 
-# 显示调试信息
+# Display debug info
 Write-Host "========== Build Configuration ==========" -ForegroundColor Magenta
 Write-Host "Parameter EnableNvidia: $($args[0] ?? 'Not provided')" -ForegroundColor Gray
 Write-Host "Environment ENABLE_NVIDIA: $($env:ENABLE_NVIDIA ?? 'Not set')" -ForegroundColor Gray
@@ -70,21 +70,21 @@ function Build-Flutter {
     $manifestPath = "$repoRoot/rust/Cargo.toml"
     $targetDir = "$repoRoot/build/windows/x64/plugins/rust_lib_fl_caption/cargokit_build"
 
-    # 确保 cargokit_build 目录存在
+    # Ensure cargokit_build directory exists
     $targetDirWindows = $targetDir -replace '/', '\'
     if (-not (Test-Path $targetDirWindows)) {
         Write-Host "Creating cargokit_build directory: $targetDirWindows" -ForegroundColor Yellow
         New-Item -ItemType Directory -Path $targetDirWindows -Force | Out-Null
     }
 
-    # 确保 native assets 目录存在
+    # Ensure native assets directory exists
     $nativeAssetsDir = "$projectRoot/build/native_assets/windows"
     if (-not (Test-Path $nativeAssetsDir)) {
         Write-Host "Creating native assets directory: $nativeAssetsDir" -ForegroundColor Yellow
         New-Item -ItemType Directory -Path $nativeAssetsDir -Force | Out-Null
     }
     
-    # 构建 Rust 库
+    # Build Rust library
     Write-Host "Building Rust library..." -ForegroundColor Yellow
     $cargoCmd = "rustup run stable cargo build --manifest-path `"$manifestPath`" -p `"rust_lib_fl_caption`" --release --target `"x86_64-pc-windows-msvc`" --target-dir `"$targetDir`""
     Invoke-Expression $cargoCmd
@@ -94,7 +94,7 @@ function Build-Flutter {
         exit 1
     }
     
-    # 构建 Flutter 应用
+    # Build Flutter application
     Write-Host "Building Flutter application..." -ForegroundColor Yellow
     flutter build windows -v
     
@@ -113,7 +113,7 @@ function Prepare-ReleasePackages {
     
     Write-Host "Preparing release packages..." -ForegroundColor Cyan
     
-    # 复制 DLL 文件从 cargokit_build 到 Release 文件夹
+    # Copy DLL files from cargokit_build to Release folder
     $sourceDllPath = "$projectRoot\build\windows\x64\plugins\rust_lib_fl_caption\cargokit_build\x86_64-pc-windows-msvc\release\examples"
     $releaseDir = "$projectRoot\build\windows\x64\runner\Release"
     
@@ -127,7 +127,7 @@ function Prepare-ReleasePackages {
         Write-Host "Warning: Source DLL path not found: $sourceDllPath" -ForegroundColor Red
     }
     
-    # 复制 ortextensions.dll
+    # Copy ortextensions.dll
     $ortextensionsDllPath = "$projectRoot\packages\libortextensions\windows_x64\ortextensions.dll"
     if (Test-Path $ortextensionsDllPath) {
         Copy-Item $ortextensionsDllPath -Destination $releaseDir -Force
@@ -136,28 +136,28 @@ function Prepare-ReleasePackages {
         Write-Host "Warning: ortextensions.dll not found at $ortextensionsDllPath" -ForegroundColor Red
     }
     
-    # 根据 NVIDIA 启用状态决定复制到哪个目录
+    # Determine destination directory based on NVIDIA enablement
     if ($NvidiaEnabled) {
-        # 创建带 CUDA 的发布目录结构
+        # Create release directory structure WITH CUDA
         $targetDir = "$projectRoot\build\windows\x64\runner\Release_with_cuda\fl_caption"
         New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
         
-        # 复制 Release 到 Release_with_cuda/fl_caption
+        # Copy Release to Release_with_cuda/fl_caption
         Write-Host "Copying Release to $targetDir (WITH CUDA)" -ForegroundColor Yellow
         Copy-Item -Path "$releaseDir\*" -Destination $targetDir -Recurse -Force
         
         Write-Host "Release package prepared successfully (WITH CUDA)" -ForegroundColor Green
         Write-Host "- Target directory: $targetDir" -ForegroundColor Cyan
     } else {
-        # 创建不带 CUDA 的发布目录结构
+        # Create release directory structure WITHOUT CUDA
         $targetDir = "$projectRoot\build\windows\x64\runner\Release_without_cuda\fl_caption"
         New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
         
-        # 复制 Release 到 Release_without_cuda/fl_caption
+        # Copy Release to Release_without_cuda/fl_caption
         Write-Host "Copying Release to $targetDir (WITHOUT CUDA)" -ForegroundColor Yellow
         Copy-Item -Path "$releaseDir\*" -Destination $targetDir -Recurse -Force
         
-        # 从不带 CUDA 版本中移除 CUDA DLL
+        # Remove CUDA DLLs from non-CUDA version
         $cudaDlls = @("onnxruntime_providers_cuda.dll", "onnxruntime_providers_tensorrt.dll")
         foreach ($dll in $cudaDlls) {
             $dllPath = Join-Path $targetDir $dll
@@ -172,17 +172,17 @@ function Prepare-ReleasePackages {
     }
 }
 
-# 主执行流程
+# Main execution flow
 try {
-    # 更新 Cargo.toml
+    # Update Cargo.toml
     $cargoTomlPath = "$projectRoot\rust\Cargo.toml"
     $enableNvidiaFeature = $EnableNvidia -eq "true"
     Update-CargoToml -CargoTomlPath $cargoTomlPath -EnableNvidiaFeature $enableNvidiaFeature
     
-    # 构建 Flutter 应用
+    # Build Flutter application
     Build-Flutter
     
-    # 准备发布包
+    # Prepare release packages
     Prepare-ReleasePackages -NvidiaEnabled $enableNvidiaFeature
     
     Write-Host "Build process completed successfully!" -ForegroundColor Green

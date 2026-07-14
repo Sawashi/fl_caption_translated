@@ -29,10 +29,10 @@
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>用于展示实时字幕</string>
+	<string>Used to display real-time captions</string>
 	 <key>NSScreenCaptureUsageDescription</key>
-    <string>用于读取系统音频</string>
+    <string>Used to capture system audio</string>
     <key>CGRequestScreenCaptureAccess</key>
-    <string>用于读取系统音频</string>
+    <string>Used to capture system audio</string>
 </dict>
 </plist>

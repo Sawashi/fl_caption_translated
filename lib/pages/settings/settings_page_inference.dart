@@ -35,37 +35,37 @@ class SettingsInferencePage extends HookWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('推理设置', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const Text('Inference Settings', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 24),
 
-        // Whisper 相关设置
+        // Whisper settings
         const Text('Whisper', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
 
         _buildSettingRow(
-          label: '音频长度 (秒)：',
-          tooltip: '音频长度越长推理压力越大，若音频语速较快也可以减少长度从而减轻压力 (默认: 12秒)',
+          label: 'Audio Length (seconds):',
+          tooltip: 'Longer audio increases inference load. If speech is fast, reducing the length can help reduce load. (Default: 12s)',
           controller: whisperMaxAudioDurationController,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
 
         _buildSettingRow(
-          label: '推理周期间隔 (毫秒)：',
-          tooltip: '间隔越小延迟越低，但不要小于显卡推理时间，否则可能会导致炸内存 (默认: 2000毫秒)',
+          label: 'Inference Interval (ms):',
+          tooltip: 'Lower intervals reduce latency, but should not be less than the GPU inference time or it may cause OOM. (Default: 2000ms)',
           controller: inferenceIntervalController,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
 
         _buildSettingRow(
-          label: '最大推理Token长度：',
-          tooltip: '限制此值可防止whisper进入幻觉循环太久 (默认: 256)',
+          label: 'Max Decode Tokens:',
+          tooltip: 'Limiting this value prevents Whisper from getting stuck in hallucination loops for too long. (Default: 256)',
           controller: whisperDefaultMaxDecodeTokensController,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
 
         _buildSettingRow(
-          label: 'Whisper温度：',
-          tooltip: '较低的值可以使输出更加确定，较高的值输出越有创造性 (0.0-1.0, 默认: 0.0)',
+          label: 'Whisper Temperature:',
+          tooltip: 'Lower values make output more deterministic, higher values make output more creative. (0.0-1.0, Default: 0.0)',
           controller: whisperTemperatureController,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
@@ -75,19 +75,19 @@ class SettingsInferencePage extends HookWidget {
 
         const SizedBox(height: 24),
 
-        // LLM 相关设置
+        // LLM settings
         const Text('LLM', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 16),
 
         _buildSettingRow(
-          label: "LLM Prompt 前缀",
-          tooltip: "为 llm Prompt 增加前缀，如 qwen3 模型填写 /no_think 前缀即可禁用模型思考",
+          label: "LLM Prompt Prefix",
+          tooltip: "Add a prefix to the LLM prompt. For example, for the qwen3 model, add a /no_think prefix to disable model thinking.",
           controller: llmPromptPrefixController,
         ),
 
         _buildSettingRow(
-          label: 'LLM温度：',
-          tooltip: '较低的值使输出更加确定，较高的值输出越有创造性 (0.0-1.0, 默认: 0.1)',
+          label: 'LLM Temperature:',
+          tooltip: 'Lower values make output more deterministic, higher values make output more creative. (0.0-1.0, Default: 0.1)',
           controller: llmTemperatureController,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$')),
@@ -96,8 +96,8 @@ class SettingsInferencePage extends HookWidget {
         ),
 
         _buildSettingRow(
-          label: 'LLM最大输出Token：',
-          tooltip: '限制LLM输出的最大长度 (默认: 256)',
+          label: 'LLM Max Output Tokens:',
+          tooltip: 'Limit the maximum output length of the LLM. (Default: 256)',
           controller: llmMaxTokensController,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
@@ -136,13 +136,13 @@ class _TemperatureTextInputFormatter extends TextInputFormatter {
     if (newValue.text.isEmpty) {
       return newValue;
     }
-    // 解析浮点值
+    // Parse float value
     double? value = double.tryParse(newValue.text);
     if (value == null) {
       return oldValue;
     }
 
-    // 确保值在0.0到1.0之间
+    // Ensure value is between 0.0 and 1.0
     if (value < 0.0) {
       return const TextEditingValue(text: "0.0");
     } else if (value > 1.0) {

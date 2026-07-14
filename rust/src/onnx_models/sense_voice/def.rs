@@ -1,4 +1,4 @@
-// SenseVoice 特殊标记枚举
+// SenseVoice special token enum
 #[derive(Debug, Clone, PartialEq)]
 pub enum SenseVoiceLanguage {
     Chinese,   // <|zh|>
@@ -43,7 +43,7 @@ pub enum SenseVoiceTextNorm {
     WithoutITN, // <|woitn|>
 }
 
-// 解析后的SenseVoice输出结构
+// Parsed SenseVoice output structure
 #[derive(Debug, Clone)]
 pub struct SenseVoiceOutput {
     pub language: Option<SenseVoiceLanguage>,

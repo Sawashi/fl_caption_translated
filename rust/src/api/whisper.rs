@@ -69,12 +69,12 @@ pub async fn launch_caption(
     with_timestamps: Option<bool>,
     verbose: Option<bool>,
     try_with_cuda: Option<bool>,
-    whisper_max_audio_duration: Option<u32>, // 音频上下文长度
-    inference_interval: Option<u64>,         // 推理间隔时间
-    whisper_default_max_decode_tokens: Option<usize>, // 最大推理token长度
-    whisper_temperature: Option<f32>,        // 温度参数
-    vad_model_path: Option<String>,          // VAD模型路径
-    vad_filters_value: Option<f32>,          // VAD过滤值
+    whisper_max_audio_duration: Option<u32>, // Audio context length in seconds
+    inference_interval: Option<u64>,         // Inference interval in ms
+    whisper_default_max_decode_tokens: Option<usize>, // Max decode tokens
+    whisper_temperature: Option<f32>,        // Temperature parameter
+    vad_model_path: Option<String>,          // VAD model path
+    vad_filters_value: Option<f32>,          // VAD filter threshold
 ) -> anyhow::Result<()> {
     let stream_sink_clone = stream_sink.clone();
 

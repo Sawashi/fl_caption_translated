@@ -190,11 +190,11 @@ impl Decoder {
             tokens.push(self.no_timestamps_token);
         }
 
-        let default_max_decode_tokens = 256; // 设置一个默认的token数量上限
+        let default_max_decode_tokens = 256; // Set a default max token limit
         let max_tokens = max_tokens.unwrap_or(default_max_decode_tokens);
 
         for i in 0..sample_len {
-            // 检查是否超时
+            // Check if timed out
             if let Some(timeout_duration) = timeout {
                 if start_time.elapsed() >= timeout_duration {
                     println!(
@@ -205,7 +205,7 @@ impl Decoder {
                 }
             }
 
-            // 检查是否达到token数量上限
+            // Check if max token limit is reached
             if tokens.len() >= max_tokens {
                 println!(
                     "Reached maximum token limit ({} tokens), stopping decoding",
@@ -293,7 +293,7 @@ impl Decoder {
         let start_time = Instant::now();
 
         for (i, &t) in m::TEMPERATURES.iter().enumerate() {
-            // 检查是否超时
+            // Check if timed out
             if let Some(timeout_duration) = timeout {
                 if start_time.elapsed() >= timeout_duration {
                     println!(
@@ -339,7 +339,7 @@ impl Decoder {
         let start_time = Instant::now();
 
         while seek < content_frames {
-            // 检查是否超时
+            // Check if timed out
             if let Some(timeout_duration) = timeout {
                 if start_time.elapsed() >= timeout_duration {
                     println!(
@@ -356,19 +356,19 @@ impl Decoder {
             let mel_segment = mel.narrow(2, seek, segment_size)?;
             let segment_duration = (segment_size * m::HOP_LENGTH) as f64 / m::SAMPLE_RATE as f64;
 
-            // 计算本段的超时限制
+            // Calculate timeout limit for this segment
             let segment_timeout = timeout.map(|t| {
                 let elapsed = start_time.elapsed();
                 if elapsed >= t {
-                    Duration::from_secs(0) // 已经超时，设置为0
+                    Duration::from_secs(0) // Already timed out, set to 0
                 } else {
-                    t - elapsed // 剩余时间
+                    t - elapsed // Remaining time
                 }
             });
 
-            // 使用固定温度或回退机制
+            // Use fixed temperature or fallback mechanism
             let dr = if let Some(t) = temperature {
-                // 使用固定温度
+                // Use fixed temperature
                 match self.decode(&mel_segment, t as f64, segment_timeout, max_tokens_per_segment) {
                     Ok(dr) => dr,
                     Err(e) => {
@@ -379,7 +379,7 @@ impl Decoder {
                     }
                 }
             } else {
-                // 使用原始的温度回退机制
+                // Use original temperature fallback mechanism
                 match self.decode_with_fallback(
                     &mel_segment,
                     segment_timeout,

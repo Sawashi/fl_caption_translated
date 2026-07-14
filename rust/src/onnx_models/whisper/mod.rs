@@ -35,11 +35,11 @@ where
     let model_path = super::find_model_path(&models, None).unwrap();
     let session = super::init_model(model_path, params.try_with_cuda)?;
 
-    // 初始化Whisper模型
+    // Initialize Whisper model
     result_callback(_make_status_response(WhisperStatus::Loading));
     let mut model = WhisperModel::from_session(session)?;
 
-    // 设置音频捕获配置
+    // Set up audio capture config
     let audio_capture_config = AudioCaptureConfig {
         device: audio_device,
         is_input: audio_device_is_input.unwrap_or(true),
@@ -51,20 +51,20 @@ where
     let audio_info = audio_capture.get_info();
     println!("Whisper Audio capture info: {:?}", audio_info);
 
-    // 开始音频捕获
+    // Start audio capture
     let rx = audio_capture.start_capture(cancel_token.child_token())?;
 
     result_callback(_make_status_response(WhisperStatus::Ready));
     println!("Whisper Ready...");
 
-    // 初始化音频处理状态
+    // Initialize audio processing state
     let mut buffered_pcm = vec![];
     let mut history_pcm = Vec::new();
     let mut last_inference_time = Instant::now();
     let mut first_inference_done = false;
-    let inference_interval = Duration::from_millis(inference_interval_ms.unwrap_or(2000)); // 默认2000毫秒
-    let max_audio_duration: usize = whisper_max_audio_duration.unwrap_or(12) as usize; // 默认12秒
-    let language = audio_language.as_deref(); // Whisper语言设置
+    let inference_interval = Duration::from_millis(inference_interval_ms.unwrap_or(2000)); // Default 2000ms
+    let max_audio_duration: usize = whisper_max_audio_duration.unwrap_or(12) as usize; // Default 12 seconds
+    let language = audio_language.as_deref(); // Whisper language setting
 
     println!("Check and loading VAD model...");
     let mut vad_model = if let Some(vad_model_path) = vad_model_path {
@@ -79,7 +79,7 @@ where
         None
     };
 
-    // 音频处理主循环
+    // Audio processing main loop
     println!("Starting Whisper audio processing loop...");
     let mut debug_counter = 0;
 
@@ -93,7 +93,7 @@ where
             );
         }
 
-        // 接收音频数据
+        // Receive audio data
         let pcm = rx.recv_timeout(Duration::from_millis(100));
 
         if pcm.is_err() {
@@ -136,7 +136,7 @@ where
             );
         }
 
-        // 首次启动时，等待3秒数据
+        // On first start, wait for 3 seconds of data
         if !first_inference_done {
             if buffered_pcm.len() < 3 * 16000 {
                 continue;
@@ -144,16 +144,16 @@ where
             first_inference_done = true;
         }
 
-        // 检查推理间隔
+        // Check inference interval
         let now = Instant::now();
         if now.duration_since(last_inference_time) < inference_interval {
             continue;
         }
 
-        // 记录推理开始时间
+        // Record inference start time
         let inference_start = Instant::now();
 
-        // VAD检测
+        // VAD detection
         if let Some(vad_model) = vad_model.as_mut() {
             let resampled_pcm = buffered_pcm.clone();
             let vad_result = vad_model.check_vad(resampled_pcm, vad_filters_value);
@@ -175,7 +175,7 @@ where
             }
         }
 
-        // 音频长度管理
+        // Audio length management
         let max_samples = max_audio_duration * 16000;
         let total_len = history_pcm.len() + buffered_pcm.len();
 
@@ -195,7 +195,7 @@ where
             }
         }
 
-        // 合并音频数据
+        // Merge audio data
         let mut combined_pcm = Vec::with_capacity(adjusted_history_pcm.len() + buffered_pcm.len());
         combined_pcm.extend_from_slice(&adjusted_history_pcm);
         combined_pcm.extend_from_slice(&buffered_pcm);
@@ -205,15 +205,15 @@ where
 
         let pcm = combined_pcm;
 
-        // Whisper推理
+        // Whisper inference
         match model.inference(&pcm, language) {
             Ok(text) => {
                 let inference_duration = inference_start.elapsed();
 
-                // 创建结果段
+                // Create result segment
                 let segment = model::create_whisper_segment(
                     text,
-                    pcm.len() as f64 / 16000.0, // 音频时长（秒）
+                    pcm.len() as f64 / 16000.0, // Audio duration in seconds
                     inference_duration.as_millis(),
                     language.map(|s| s.to_string()),
                 );
@@ -222,7 +222,7 @@ where
             }
             Err(e) => {
                 println!("Whisper inference error: {:?}", e);
-                // 发送错误状态
+                // Send error status
                 result_callback(_make_status_response(WhisperStatus::Error));
             }
         }

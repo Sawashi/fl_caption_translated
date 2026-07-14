@@ -14,7 +14,7 @@ class HomeErrorWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (errorType == DartWhisperClientError.modelNotFound) ...[
-          Text("未找到模型文件，点击右侧设置图标检查设置", style: TextStyle(fontSize: 18)),
+          Text("Model file not found. Click the settings icon on the right to check your settings.", style: TextStyle(fontSize: 18)),
         ],
         if (errorInfo != null)
           Text(

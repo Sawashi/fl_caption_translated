@@ -27,13 +27,13 @@ pub struct LaunchCaptionParams {
     pub with_timestamps: Option<bool>,
     pub verbose: Option<bool>,
     pub try_with_cuda: bool,
-    pub inference_timeout: Option<Duration>, // 推理总超时参数
-    pub max_tokens_per_segment: Option<usize>, // 防止幻觉的每段最大token数
-    pub whisper_max_audio_duration: Option<u32>, // 音频上下文长度(秒)
-    pub inference_interval_ms: Option<u64>,  // 推理间隔时间(毫秒)
-    pub whisper_temperature: Option<f32>,    // 温度参数
-    pub vad_model_path: Option<String>,      // VAD模型路径
-    pub vad_filters_value: Option<f32>,      // VAD模型阈值
+    pub inference_timeout: Option<Duration>, // Total inference timeout
+    pub max_tokens_per_segment: Option<usize>, // Max tokens per segment to prevent hallucinations
+    pub whisper_max_audio_duration: Option<u32>, // Audio context length in seconds
+    pub inference_interval_ms: Option<u64>,  // Inference interval in ms
+    pub whisper_temperature: Option<f32>,    // Temperature parameter
+    pub vad_model_path: Option<String>,      // VAD model path
+    pub vad_filters_value: Option<f32>,      // VAD filter threshold
 }
 
 pub async fn launch_caption<F>(
@@ -126,14 +126,14 @@ where
     result_callback(_make_status_response(model::WhisperStatus::Ready));
     println!("Whisper Ready...");
 
-    // 处理任务在当前函数中运行
+    // Processing runs in the current function
     let mut buffered_pcm = vec![];
     let mut history_pcm = Vec::new();
     let mut last_inference_time = Instant::now();
     // let mut last_vad_passed_time = Instant::now();
     let mut first_inference_done = false;
-    let inference_interval = Duration::from_millis(inference_interval_ms.unwrap_or(2000)); // 默认2000毫秒
-    let max_audio_duration: usize = whisper_max_audio_duration.unwrap_or(12) as usize; // 默认12秒
+    let inference_interval = Duration::from_millis(inference_interval_ms.unwrap_or(2000)); // Default 2000ms
+    let max_audio_duration: usize = whisper_max_audio_duration.unwrap_or(12) as usize; // Default 12 seconds
     let mut language_token_set = false;
     let mut language_token_name: Option<String> = None;
     let fixed_temperature = whisper_temperature;
@@ -152,13 +152,13 @@ where
         None
     };
 
-    // 处理循环
+    // Processing loop
     println!("Starting audio processing loop...");
     let mut debug_counter = 0;
     while !cancel_token.is_cancelled() {
         debug_counter += 1;
         if debug_counter % 500 == 0 {
-            // 每50秒打印一次调试信息
+            // Print debug info every 50 seconds
             println!(
                 "Audio processing loop iteration {}, buffered_pcm.len(): {}",
                 debug_counter,
@@ -166,14 +166,14 @@ where
             );
         }
 
-        // 尝试接收音频数据，设置超时以便定期检查取消状态
+        // Try to receive audio data with a timeout to periodically check cancellation
         let pcm = rx.recv_timeout(Duration::from_millis(100));
 
-        // 如果接收超时或通道关闭，检查是否应该取消
+        // If recv times out or channel is closed, check if cancellation is requested
         if pcm.is_err() {
             let err = pcm.unwrap_err();
             if debug_counter % 1000 == 0 {
-                // 每100秒打印一次超时信息
+                // Print timeout info every 100 seconds
                 println!(
                     "Audio recv timeout or error: {:?}, cancel_token cancelled: {}",
                     err,
@@ -186,7 +186,7 @@ where
             continue;
         }
 
-        // 处理接收到的音频数据
+        // Process received audio data
         let pcm = pcm.unwrap();
 
         static mut AUDIO_RECEIVED: bool = false;
@@ -212,7 +212,7 @@ where
             );
         }
 
-        // 首次启动时，等待3秒数据
+        // On first start, wait for 3 seconds of data
         if !first_inference_done {
             if buffered_pcm.len() < 3 * 16000 {
                 continue;
@@ -220,19 +220,19 @@ where
             first_inference_done = true;
         }
 
-        // 检查距离上次推理的时间是否小于设定间隔
+        // Check if enough time has passed since the last inference
         let now = Instant::now();
         if now.duration_since(last_inference_time) < inference_interval {
             continue;
         }
 
-        // 如果最后有效推理间隔大于设定间隔的两倍，则清空历史音频 （考虑到自然停顿等）
+        // If the gap since last valid inference exceeds 2x the interval, clear history audio (accounts for natural pauses)
         // if now.duration_since(last_vad_passed_time) > inference_interval * 2 {
         //     println!("Clearing buffered_pcm due to long silence");
         //     history_pcm.clear();
         // }
 
-        // 记录推理开始时间
+        // Record inference start time
         let inference_start = Instant::now();
 
         if let Some(vad_model) = vad_model.as_mut() {
@@ -258,16 +258,16 @@ where
             }
         }
 
-        // 计算最大样本数（使用16000采样率）
+        // Calculate max samples (using 16000 sample rate)
         let max_samples = max_audio_duration * 16000;
 
-        // 计算总长度
+        // Calculate total length
         let total_len = history_pcm.len() + buffered_pcm.len();
 
-        // 如果总长度超过最大样本限制，调整history_pcm
+        // If total length exceeds max sample limit, adjust history_pcm
         let mut adjusted_history_pcm = history_pcm.clone();
         if total_len > max_samples {
-            // 计算需要从history_pcm中减去的长度
+            // Calculate how much to remove from history_pcm
             let excess = total_len - max_samples;
             println!(
                 "history_pcm len: {} buffered_pcm len: {} excess: {}",
@@ -275,24 +275,24 @@ where
                 buffered_pcm.len(),
                 excess
             );
-            // 如果history_pcm长度大于excess，保留后面部分
+            // If history_pcm length exceeds excess, keep the latter part
             if history_pcm.len() > excess {
                 adjusted_history_pcm = history_pcm[excess..].to_vec();
             } else {
-                // 如果history_pcm不够减，则不使用history_pcm
+                // If history_pcm is insufficient, don't use it
                 adjusted_history_pcm = Vec::new();
             }
         }
 
-        // 合并调整后的历史数据和新数据进行处理
+        // Merge adjusted history data and new data for processing
         let mut combined_pcm = Vec::with_capacity(adjusted_history_pcm.len() + buffered_pcm.len());
         combined_pcm.extend_from_slice(&adjusted_history_pcm);
         combined_pcm.extend_from_slice(&buffered_pcm);
 
-        // 更新历史数据为当前的组合数据
+        // Update history data to current combined data
         history_pcm = combined_pcm.clone();
 
-        // 清理缓冲区
+        // Clear buffer
         buffered_pcm.clear();
 
         let pcm = combined_pcm;
@@ -335,7 +335,7 @@ where
             );
         }
 
-        // 运行解码器并获取结果
+        // Run the decoder and get results
         let mut segments = decoder.run(
             &mel,
             None,
@@ -343,7 +343,7 @@ where
             max_tokens_per_segment,
             fixed_temperature,
         )?;
-        // 计算推理用时并输出
+        // Calculate and output inference duration
         let inference_duration = inference_start.elapsed();
 
         let audio_duration = (pcm.len() as f32 / 16000.0 * 1000.0) as u128;
@@ -354,7 +354,7 @@ where
             segment.audio_duration = Some(audio_duration);
         }
 
-        // 发送结果并更新推理时间
+        // Send results and update inference time
         result_callback(segments);
         decoder.reset_kv_cache();
         last_inference_time = now;

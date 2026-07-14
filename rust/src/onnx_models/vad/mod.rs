@@ -86,7 +86,7 @@ impl VadDevice {
             let output_tensor = output.try_extract_tensor::<f32>()?;
             let state_tensor = new_state.try_extract_tensor::<f32>()?;
 
-            let prediction_value = output_tensor.1[0]; // 获取第一个值
+            let prediction_value = output_tensor.1[0]; // Get the first value
             res.push(prediction_value);
 
             state = Array3::<f32>::from_shape_vec((2, 1, 128), state_tensor.1.to_vec())?;

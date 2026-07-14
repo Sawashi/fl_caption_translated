@@ -6,7 +6,7 @@ use crate::candle_models::whisper::model::{DecodingResult, Segment, WhisperStatu
 
 pub struct WhisperModel {
     session: Session,
-    // 推理参数
+    // Inference parameters
     max_length: i32,
     min_length: i32,
     num_beams: i32,
@@ -109,12 +109,12 @@ impl WhisperModel {
     ) -> anyhow::Result<String> {
         use ort::value::Value;
 
-        // 将音频数据转换为WAV格式
+        // Convert audio data to WAV format
         let audio_bytes = self.convert_audio_to_wav(audio_data);
         let audio = Array1::from_iter(audio_bytes.iter().copied());
         let audio = audio.into_owned().insert_axis(Axis(0));
 
-        // 使用模型属性中的参数
+        // Use parameters from model metadata
         let max_length = Array::from_shape_vec((1,), vec![self.max_length])?;
         let min_length = Array::from_shape_vec((1,), vec![self.min_length])?;
         let num_beams = Array::from_shape_vec((1,), vec![self.num_beams])?;
@@ -122,7 +122,7 @@ impl WhisperModel {
         let length_penalty = Array::from_shape_vec((1,), vec![self.length_penalty])?;
         let repetition_penalty = Array::from_shape_vec((1,), vec![self.repetition_penalty])?;
 
-        // 构建 decoder_input_ids
+        // Build decoder_input_ids
         let language_token = self.language_to_token(language.unwrap_or("en"));
         let task_token = super::multilingual::get_language_token_id("transcribe").unwrap() as i32;
         let timestamp_token =
@@ -138,7 +138,7 @@ impl WhisperModel {
             ],
         )?;
 
-        // 转换为 Value
+        // Convert to Value
         let audio_value = Value::from_array(audio)?;
         let max_length_value = Value::from_array(max_length)?;
         let min_length_value = Value::from_array(min_length)?;
@@ -167,19 +167,19 @@ impl WhisperModel {
             inference_duration.as_secs_f32()
         );
 
-        // 获取输出
+        // Get outputs
         let output_keys: Vec<_> = outputs.keys().collect();
         println!("Available output keys: {:?}", output_keys);
 
-        // 尝试获取字符串输出
+        // Try to get string output
         if let Some(str_output) = outputs.get("str") {
             println!("Found 'str' output, type: {:?}", str_output.dtype());
             println!("Output shape: {:?}", str_output.shape());
 
-            // 使用 try_extract_string_array 提取字符串数组
+            // Use try_extract_string_array to extract string array
             match str_output.try_extract_string_array() {
                 Ok(string_array) => {
-                    // 获取数组中的第一个字符串
+                    // Get the first string from the array
                     if let Some(text) = string_array.iter().next() {
                         Ok(text.clone())
                     } else {

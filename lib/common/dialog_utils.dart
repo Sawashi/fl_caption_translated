@@ -8,13 +8,13 @@ Future showToast(
 }) async {
   return showBaseDialog(
     context,
-    title: title ?? "提示",
+    title: title ?? "Notice",
     content: Text(msg),
     actions: [
       FilledButton(
         child: Padding(
           padding: const EdgeInsets.only(top: 2, bottom: 2, left: 8, right: 8),
-          child: Text("我知道了"),
+          child: Text("OK"),
         ),
         onPressed: () => Navigator.pop(context),
       ),
@@ -31,8 +31,8 @@ Future<bool> showConfirmDialogs(
   String cancel = "",
   BoxConstraints? constraints,
 }) async {
-  if (confirm.isEmpty) confirm = "确定";
-  if (cancel.isEmpty) cancel = "取消";
+  if (confirm.isEmpty) confirm = "Confirm";
+  if (cancel.isEmpty) cancel = "Cancel";
 
   final r = await showBaseDialog(
     context,

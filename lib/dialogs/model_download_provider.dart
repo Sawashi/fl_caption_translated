@@ -91,7 +91,7 @@ class ModelDownloadState extends _$ModelDownloadState {
 
     final downloadUrlsMap = whisperModels[state.modelName]?.getDownloadUrls();
     if (downloadUrlsMap == null || downloadUrlsMap.isEmpty) {
-      state = state.copyWith(errorText: "下载链接未找到", isReady: false, currentProgress: 0);
+      state = state.copyWith(errorText: "Download URL not found", isReady: false, currentProgress: 0);
       return false;
     }
     var modelPath = modelDirectory.absolute.path;
@@ -131,11 +131,11 @@ class ModelDownloadState extends _$ModelDownloadState {
           state = state.copyWith(isReady: true, currentProgress: 100);
           debugPrint("Model ${state.modelName} downloaded successfully to ${state.modelPath}");
         } else {
-          state = state.copyWith(errorText: "下载失败: ${response.statusCode}", isReady: false, currentProgress: 0);
+          state = state.copyWith(errorText: "Download failed: ${response.statusCode}", isReady: false, currentProgress: 0);
           return false;
         }
       } catch (e) {
-        state = state.copyWith(errorText: "下载失败: $e", isReady: false, currentProgress: 0);
+        state = state.copyWith(errorText: "Download failed: $e", isReady: false, currentProgress: 0);
         return false;
       }
       state = state.copyWith(currentDownloadFileIndex: state.currentDownloadFileIndex + 1);

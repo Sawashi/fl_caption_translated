@@ -174,7 +174,7 @@ class DartWhisperCaption extends _$DartWhisperCaption {
                   );
                 }
                 newResultList.removeWhere((e) {
-                  // 移除低置信度的结果
+                  // Remove low-confidence results
                   if (e.avgLogprob < -1.5) {
                     debugPrint("[DartWhisperCaption] Remove low logprob: ${e.avgLogprob}");
                     return true;

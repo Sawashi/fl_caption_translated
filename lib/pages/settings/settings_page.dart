@@ -30,7 +30,7 @@ class SettingsApp extends HookConsumerWidget {
     final apiKeyController = useTextEditingController();
     final apiModelController = useTextEditingController();
 
-    // 推理设置相关控制器
+    // Inference settings controllers
     final whisperMaxAudioDurationController = useTextEditingController();
     final inferenceIntervalController = useTextEditingController();
     final whisperDefaultMaxDecodeTokensController = useTextEditingController();
@@ -64,7 +64,7 @@ class SettingsApp extends HookConsumerWidget {
         apiKeyController.dispose();
         apiModelController.dispose();
 
-        // 释放新增的控制器
+        // Dispose added controllers
         whisperMaxAudioDurationController.dispose();
         inferenceIntervalController.dispose();
         whisperDefaultMaxDecodeTokensController.dispose();
@@ -76,14 +76,14 @@ class SettingsApp extends HookConsumerWidget {
 
     return FluentApp(
       debugShowCheckedModeBanner: false,
-      title: '设置',
+      title: 'Settings',
       theme: FluentThemeData(
         brightness: Brightness.dark,
         fontFamily: "SourceHanSansCN-Regular",
         scaffoldBackgroundColor: Colors.black.withValues(alpha: 0.6),
       ),
       home: ScaffoldPage(
-        header: const PageHeader(title: Text('FL Caption 设置')),
+        header: const PageHeader(title: Text('FL Caption Settings')),
         content: Builder(
           builder: (BuildContext context) {
             if (appSettingsData.value == null) {
@@ -163,7 +163,7 @@ class SettingsApp extends HookConsumerWidget {
                             FilledButton(
                               child: const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 4, horizontal: 12),
-                                child: Text("保存设置"),
+                                child: Text("Save Settings"),
                               ),
                               onPressed: () async {
                                 final newSettings = appSettingsData.value?.copyWith(
@@ -205,9 +205,9 @@ class SettingsApp extends HookConsumerWidget {
     ValueNotifier<int> selectedMenuIndex,
   ) {
     final menuItems = [
-      {'icon': FluentIcons.closed_caption, 'title': "基础设置", 'index': 0},
-      {'icon': FontAwesomeIcons.lightbulb, 'title': "推理设置", 'index': 1},
-      {'icon': FluentIcons.info, 'title': "关于", 'index': 2},
+      {'icon': FluentIcons.closed_caption, 'title': "Basic Settings", 'index': 0},
+      {'icon': FontAwesomeIcons.lightbulb, 'title': "Inference Settings", 'index': 1},
+      {'icon': FluentIcons.info, 'title': "About", 'index': 2},
     ];
 
     return Container(
